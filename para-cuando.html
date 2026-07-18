@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Para Cuando</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2B2621">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Literata:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFE6D6;
+    --paper-dark:#e3d7c1;
+    --ink:#2B2621;
+    --ink-soft:#4a423a;
+    --seal:#A8402C;
+    --sage:#6E7C5C;
+    --gold:#B8912F;
+    --card-bg:#fbf6ec;
+    --shadow: 0 8px 24px rgba(43,38,33,0.18);
+  }
+  /* tema oscuro manual — no afecta Nuestra historia ni Nuestra conexión, que tienen su propia paleta */
+  body.dark-mode{
+    --paper:#211b17;
+    --ink:#f2e9da;
+    --ink-soft:#c9beac;
+    --card-bg:#2c231d;
+    --shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  /* Nuestra historia mantiene su propio sistema de color (día/noche automático), */
+  /* ajeno al tema claro/oscuro manual del resto de la app */
+  #screen-timeline{ background:#EFE6D6; color:#2B2621; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184,145,47,0.06), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(110,124,92,0.06), transparent 40%);
+    font-family:'Work Sans', sans-serif;
+    color:var(--ink);
+    min-height:100%;
+    overflow-x:hidden;
+  }
+  .screen{ display:none; min-height:100vh; padding:24px 18px 60px; max-width:520px; margin:0 auto; }
+  .screen.active{ display:block; animation:fadeIn .35s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .header{ display:flex; flex-direction:column; align-items:center; padding:18px 0 26px; position:relative; }
+  .seal-logo{
+    width:64px; height:64px; position:relative;
+    border-radius: 42% 58% 53% 47% / 57% 44% 56% 43%;
+    background:
+      repeating-radial-gradient(circle at 42% 36%, rgba(0,0,0,0.05) 0 2px, transparent 2px 5px),
+      radial-gradient(circle at 32% 26%, #cf5c42 0%, var(--seal) 52%, #832f1c 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:
+      0 5px 11px rgba(168,64,44,0.4),
+      inset 0 3px 4px rgba(255,255,255,0.28),
+      inset 0 -5px 9px rgba(0,0,0,0.32);
+    cursor:pointer; user-select:none; margin-bottom:10px;
+    transition:transform .15s ease;
+  }
+  .seal-logo::before, .seal-logo::after{
+    content:''; position:absolute; background:inherit; border-radius:50%;
+  }
+  .seal-logo::before{ width:11px; height:15px; bottom:-7px; left:16px; transform:rotate(-18deg); border-radius:40% 60% 60% 40%/50% 50% 70% 30%; }
+  .seal-logo::after{ width:8px; height:11px; bottom:-5px; right:14px; transform:rotate(14deg); border-radius:50% 50% 60% 40%/50% 50% 70% 30%; }
+  .seal-logo:active{ transform:scale(0.92); }
+  .seal-logo span{
+    font-family:'Fraunces', serif; font-weight:700; color:#f2e3d3; font-size:23px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.18), 0 -1.5px 1.5px rgba(0,0,0,0.4);
+    position:relative; z-index:2;
+  }
+  .brand{ font-family:'Fraunces', serif; font-weight:600; font-size:28px; letter-spacing:0.3px; text-align:center; }
+  .brand small{ display:inline-block; font-family:'Space Mono', monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-soft); margin-top:4px; font-weight:400; padding:14px 30px; }
+
+  .theme-toggle{
+    position:absolute; top:0; right:0; width:38px; height:38px; border-radius:50%;
+    background:rgba(43,38,33,0.06); border:1px solid rgba(43,38,33,0.12);
+    display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer;
+    transition: background 150ms ease, transform 120ms ease; color:var(--ink);
+  }
+  .theme-toggle:active{ transform:scale(0.92); }
+  body.dark-mode .theme-toggle{ background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.14); }
+
+  .today-stamp{
+    font-family:'Space Mono', monospace; font-size:10px; color:var(--ink-soft); opacity:0.75;
+    margin-top:10px; text-align:center;
+  }
+
+  .subtitle{ font-family:'Literata', serif; font-style:italic; text-align:center; color:var(--ink-soft); font-size:14px; margin:0 0 24px; }
+  .envelope{
+    background:var(--card-bg); border-radius:4px; padding:18px 18px 16px; margin-bottom:16px;
+    box-shadow:var(--shadow); position:relative; cursor:pointer; border:1px solid rgba(43,38,33,0.08);
+  }
+  .envelope:nth-child(odd){ transform:rotate(-0.6deg); }
+  .envelope:nth-child(even){ transform:rotate(0.5deg); }
+  .envelope.locked{ opacity:0.75; }
+  .envelope-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .postmark{
+    font-family:'Space Mono', monospace; font-size:10.5px; color:var(--sage);
+    border:1.5px dashed var(--sage); border-radius:50%;
+    width:58px; height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transform:rotate(-8deg); line-height:1.2; text-align:center; flex-shrink:0;
+  }
+  .env-title{ font-family:'Fraunces', serif; font-weight:600; font-size:18px; margin:0 0 4px; padding-right:10px; }
+  .env-meta{ font-family:'Space Mono', monospace; font-size:11px; color:var(--ink-soft); }
+  .lock-badge{
+    display:inline-flex; align-items:center; gap:5px; margin-top:10px;
+    font-family:'Space Mono', monospace; font-size:11px; color:var(--seal);
+    background:rgba(168,64,44,0.08); padding:4px 9px; border-radius:20px;
+  }
+  .unlocked-badge{ color:var(--sage); background:rgba(110,124,92,0.1); }
+
+  .letter-paper{
+    background:var(--card-bg); border-radius:6px; padding:28px 22px; box-shadow:var(--shadow);
+    font-family:'Literata', serif; line-height:1.7; font-size:16.5px;
+  }
+  .letter-stamp{ font-family:'Space Mono', monospace; font-size:11.5px; color:var(--ink-soft); border-bottom:1px solid rgba(43,38,33,0.15); padding-bottom:14px; margin-bottom:18px; }
+  .letter-title{ font-family:'Fraunces', serif; font-weight:700; font-size:24px; margin:0 0 6px; }
+  .letter-body{ white-space:pre-wrap; }
+  .letter-signature{ font-family:'Fraunces', serif; font-style:italic; font-weight:600; margin-top:22px; padding-top:14px; border-top:1px dashed rgba(43,38,33,0.2); color:var(--ink-soft); }
+
+  .btn{ font-family:'Work Sans', sans-serif; font-weight:600; font-size:14px; border:none; border-radius:8px; padding:13px 20px; cursor:pointer; transition:transform .12s ease; }
+  .btn:active{ transform:scale(0.97); }
+  .btn-primary{ background:var(--ink); color:var(--paper); width:100%; }
+  .btn-seal{ background:var(--seal); color:#fbf6ec; width:100%; }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid rgba(43,38,33,0.2); width:100%; }
+  .btn-gold{ background:var(--gold); color:#2B2621; width:100%; }
+  .back-link{ display:inline-block; margin-bottom:18px; font-family:'Space Mono', monospace; font-size:12px; color:var(--ink-soft); cursor:pointer; text-decoration:none; }
+  .fab{
+    position:fixed; bottom:104px; right:20px; width:56px; height:56px; border-radius:50%;
+    background:var(--ink); color:var(--paper); font-size:26px; display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow); border:none; cursor:pointer; z-index:25;
+  }
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(43,38,33,0.55); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal-overlay.active{ display:flex; }
+  .modal{ background:var(--paper); border-radius:10px; padding:24px; width:100%; max-width:420px; max-height:88vh; overflow-y:auto; }
+  .modal h3{ font-family:'Fraunces', serif; margin:0 0 16px; font-size:20px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--ink-soft); }
+  .field input, .field textarea, .field select{
+    width:100%; padding:10px 12px; border-radius:6px; border:1.5px solid rgba(43,38,33,0.2);
+    font-family:'Work Sans', sans-serif; font-size:14px; background:var(--card-bg); color:var(--ink);
+  }
+  .field textarea{ min-height:120px; font-family:'Literata', serif; resize:vertical; }
+  .row2{ display:flex; gap:10px; }
+  .row2 > *{ flex:1; }
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-soft); font-family:'Literata', serif; font-style:italic; }
+  .admin-bar{ display:flex; justify-content:space-between; align-items:center; background:rgba(184,145,47,0.12); border-radius:8px; padding:10px 14px; margin-bottom:18px; font-family:'Space Mono', monospace; font-size:11.5px; }
+  .admin-bar span{ color:var(--gold); font-weight:700; }
+  .admin-bar a{ color:var(--ink); text-decoration:underline; cursor:pointer; }
+  .letter-list-actions{ display:flex; gap:8px; margin-top:14px; }
+  .letter-list-actions .btn{ font-size:12px; padding:9px 12px; }
+  .special-box{ text-align:center; padding:40px 20px; }
+  .special-box .seal-logo{ margin:0 auto 18px; width:80px; height:80px; background:radial-gradient(circle at 35% 30%, #d1a542, var(--gold)); }
+  .special-box .seal-logo span{ color:#2B2621; }
+  .error-msg{ color:var(--seal); font-family:'Space Mono', monospace; font-size:12px; margin-top:8px; min-height:16px; }
+
+  /* BOTTOM NAV — cápsula flotante */
+  .bottom-nav{
+    position:fixed; left:16px; right:16px; bottom:18px; margin:0 auto; max-width:420px;
+    background:var(--ink); border-radius:30px; display:flex; z-index:30;
+    box-shadow:0 10px 28px rgba(43,38,33,0.35);
+    padding:6px; gap:4px;
+  }
+  .nav-item{
+    flex:1; position:relative; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:9px 4px 8px; background:none; border:none; cursor:pointer; border-radius:22px;
+    font-family:'Work Sans', sans-serif; font-size:10.5px; font-weight:500; color:rgba(239,230,214,0.55);
+    transition:color .25s ease; z-index:2;
+  }
+  .nav-item .nav-icon{ font-size:19px; transition:transform .25s ease; }
+  .nav-item.active{ color:#fbf6ec; }
+  .nav-item.active .nav-icon{ transform:translateY(-1px) scale(1.08); }
+  .nav-indicator{
+    position:absolute; top:6px; bottom:6px; left:6px; width:calc(33.333% - 5.33px);
+    background:linear-gradient(180deg, #c1503a, var(--seal));
+    border-radius:20px; z-index:1; transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 3px 10px rgba(168,64,44,0.5);
+  }
+  body.has-nav .screen{ padding-bottom:100px; }
+
+  /* ===== NUESTRA HISTORIA — escalinata isométrica, día/noche automático ===== */
+  #screen-timeline{ position:relative; overflow:hidden; transition: background 0.6s ease, color 0.6s ease; }
+  #screen-timeline.hist-night{
+    color:#f2e9da;
+    background:#141019;
+    background-image:
+      radial-gradient(1px 1px at 12% 8%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 78% 15%, rgba(255,255,255,0.35), transparent),
+      radial-gradient(1.5px 1.5px at 32% 22%, rgba(255,255,255,0.45), transparent),
+      radial-gradient(1px 1px at 60% 4%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1.5px 1.5px at 20% 55%, rgba(255,255,255,0.35), transparent),
+      radial-gradient(1px 1px at 70% 70%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(circle at 50% 0%, rgba(60,40,80,0.5), transparent 60%),
+      linear-gradient(180deg, #141019 0%, #0c0910 100%);
+  }
+  #screen-timeline .hist-mode-tag{
+    display:block; text-align:center; font-family:'Space Mono', monospace; font-size:9.5px;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--sage); opacity:0.7; margin-top:-6px; margin-bottom:16px;
+  }
+  #screen-timeline.hist-night .hist-mode-tag{ color:var(--gold); }
+
+  .stairwell{ max-width:460px; margin:0 auto 20px; padding:0 24px; perspective:1400px; position:relative; z-index:5; }
+
+  .terrace{
+    position:relative; margin-bottom:60px; opacity:0; transform:translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .terrace.hist-visible{ opacity:1; transform:translateY(0); }
+  .terrace:nth-child(2n){ margin-left:14%; }
+  .terrace:nth-child(1) .t-card{ animation-delay:0s; }
+  .terrace:nth-child(2) .t-card{ animation-delay:.6s; }
+  .terrace:nth-child(3) .t-card{ animation-delay:1.2s; }
+  .terrace:nth-child(4) .t-card{ animation-delay:1.8s; }
+  .terrace:nth-child(5) .t-card{ animation-delay:2.4s; }
+  .terrace:nth-child(6) .t-card{ animation-delay:3.0s; }
+
+  .t-block{
+    position:relative; width:200px; height:100px; margin:0 auto;
+    transform-style:preserve-3d; transform: rotateX(52deg) rotateZ(-45deg);
+  }
+  .t-face{ position:absolute; }
+  .t-top{
+    width:200px; height:100px; background:linear-gradient(135deg, var(--tf-light), var(--tf-mid));
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); transition: background 0.6s ease;
+  }
+  .t-side-right{
+    width:100px; height:34px; background:var(--tf-dark);
+    transform-origin:top left; transform: rotateX(-90deg) rotateY(0deg) translate(200px,0px) rotateZ(90deg);
+    top:0; left:0; transition: background 0.6s ease;
+  }
+  .t-side-left{
+    width:200px; height:34px; background:var(--tf-mid2);
+    transform-origin:top left; transform: rotateX(90deg) translateY(-34px);
+    top:100px; left:0; transition: background 0.6s ease;
+  }
+  .terrace:nth-child(odd) .t-block{ --tf-light:#fbf6ec; --tf-mid:#e9dcc5; --tf-dark:#7c2f20; --tf-mid2:#a8402c; }
+  .terrace:nth-child(even) .t-block{ --tf-light:#eef0e6; --tf-mid:#d3d9c4; --tf-dark:#3f4834; --tf-mid2:#535e45; }
+  #screen-timeline.hist-night .terrace:nth-child(odd) .t-block{ --tf-light:#3a2f28; --tf-mid:#241c18; --tf-dark:#160f0c; --tf-mid2:#4a3527; }
+  #screen-timeline.hist-night .terrace:nth-child(even) .t-block{ --tf-light:#26302a; --tf-mid:#182019; --tf-dark:#0e130f; --tf-mid2:#2c3a30; }
+
+  .t-card{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-58%) rotateZ(45deg) rotateX(-52deg);
+    width:92px; background:#fbf6ec; border-radius:5px; padding:8px 8px 10px;
+    box-shadow:0 10px 22px rgba(43,38,33,0.35);
+    text-align:center; color:var(--ink);
+    animation: histFloat 3.6s ease-in-out infinite;
+    transition: background 0.6s ease, box-shadow 0.6s ease, color 0.6s ease;
+  }
+  #screen-timeline.hist-night .t-card{
+    background:#241d28; color:#f2e9da;
+    box-shadow:0 10px 26px rgba(0,0,0,0.55), 0 0 24px rgba(224,185,74,0.18);
+  }
+  @keyframes histFloat{ 0%, 100%{ margin-top:0px; } 50%{ margin-top:-6px; } }
+  .t-card img{ width:100%; height:58px; object-fit:cover; border-radius:3px; margin-bottom:6px; display:block; }
+  .t-card .t-nophoto{
+    width:100%; height:58px; border-radius:3px; margin-bottom:6px;
+    background:linear-gradient(135deg, var(--sage-light,#93a17e), var(--sage));
+  }
+  .terrace:nth-child(even) .t-card .t-nophoto{ background:linear-gradient(135deg, #c96b50, var(--seal)); }
+  .t-card .t-date{ font-family:'Space Mono', monospace; font-size:8px; color:var(--ink-soft); transition:color 0.6s ease; }
+  #screen-timeline.hist-night .t-card .t-date{ color:var(--gold); }
+  .t-card .t-caption{ font-family:'Literata', serif; font-size:10px; line-height:1.25; margin-top:2px; }
+
+  .t-light-dot{
+    position:absolute; width:9px; height:9px; border-radius:50%;
+    background:var(--gold); left:50%; top:100%; margin-left:-4.5px;
+    box-shadow:0 0 0px var(--gold); opacity:0; transition: box-shadow 0.6s ease, opacity 0.6s ease;
+  }
+  .terrace.hist-visible .t-light-dot{ opacity:1; box-shadow:0 0 12px 3px rgba(184,145,47,0.35); }
+  #screen-timeline.hist-night .terrace.hist-visible .t-light-dot{
+    box-shadow:0 0 8px 3px var(--gold), 0 0 30px 10px rgba(224,185,74,0.4);
+  }
+
+  .hist-progress-rail{
+    position:fixed; right:12px; top:50%; transform:translateY(-50%);
+    display:flex; flex-direction:column; gap:12px; z-index:10;
+    opacity:0; pointer-events:none; transition: opacity 0.5s ease;
+  }
+  #screen-timeline.hist-night .hist-progress-rail{ opacity:1; }
+  .hist-rail-dot{
+    width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.18);
+    transition: background 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+  }
+  .hist-rail-dot.active{ background:var(--gold); box-shadow:0 0 8px 2px rgba(224,185,74,0.6); transform:scale(1.35); }
+
+  /* AJUSTES */
+  .settings-section{ background:var(--card-bg); border-radius:8px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
+  .settings-section h4{ font-family:'Fraunces', serif; margin:0 0 10px; font-size:15px; }
+  .settings-note{ font-family:'Literata', serif; font-style:italic; font-size:12.5px; color:var(--ink-soft); margin:6px 0 0; }
+  .locked-settings{ text-align:center; padding:50px 20px; font-family:'Literata', serif; font-style:italic; color:var(--ink-soft); }
+
+  /* ===== NUESTRA CONEXIÓN — pantalla propia, paleta celestial aparte ===== */
+  #screen-connection{
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(255,214,140,0.28), transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(120,70,40,0.5), transparent 60%),
+      linear-gradient(180deg, #241a2e 0%, #2f2035 35%, #472616 70%, #6b3a1e 100%);
+    color:#fff3dd; min-height:100vh; position:relative; overflow:hidden;
+  }
+  .conn-mote{
+    position:absolute; bottom:-10px; border-radius:50%;
+    background:radial-gradient(circle, #ffe8b8, #e0a94a 70%, transparent 100%);
+    opacity:0; animation: connDrift linear infinite; z-index:1;
+  }
+  @keyframes connDrift{
+    0%{ opacity:0; transform:translate(0,0) scale(1); }
+    10%{ opacity:0.9; } 90%{ opacity:0.5; }
+    100%{ opacity:0; transform:translate(var(--dx), -650px) scale(0.4); }
+  }
+  .conn-banner{ position:relative; z-index:5; text-align:center; padding:26px 24px 4px; }
+  .conn-banner h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:25px; margin:0;
+    color:#fff3dd; text-shadow:0 0 18px rgba(255,214,140,0.5), 0 0 40px rgba(255,180,90,0.25);
+  }
+  .conn-sky{ position:relative; width:100%; max-width:420px; margin:14px auto 0; height:280px; z-index:5; }
+  .conn-sky svg{ width:100%; height:100%; overflow:visible; }
+  .conn-star{ fill:#fff3dd; filter:drop-shadow(0 0 4px rgba(255,230,180,0.9)); }
+  .conn-star.conn-big{ filter:drop-shadow(0 0 7px rgba(255,230,180,1)); }
+  .conn-star.conn-heart{
+    fill:#ff6a4a; filter:drop-shadow(0 0 9px rgba(255,110,70,1)) drop-shadow(0 0 18px rgba(255,90,60,0.6));
+  }
+  .conn-const-line{ stroke:#ffcf8a; stroke-width:1.6; fill:none; opacity:0.85; stroke-dasharray:4 3; }
+
+  #conn-virgo, #conn-scorpio{ transition: transform 1.1s cubic-bezier(0.4,0,0.2,1), opacity 1.1s ease; }
+  #conn-virgo{ transform-origin: 105px 130px; }
+  #conn-scorpio{ transform-origin: 318px 130px; }
+  .conn-pressing #conn-virgo{ transform: translateX(72px) scale(0.55); opacity:0.12; }
+  .conn-pressing #conn-scorpio{ transform: translateX(-72px) scale(0.55); opacity:0.12; }
+
+  .conn-glyph-halo{
+    fill:none; stroke:rgba(255,214,140,0.35); stroke-width:1; stroke-dasharray:3 5;
+    animation: connHaloSpin 24s linear infinite;
+  }
+  @keyframes connHaloSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+  .conn-zodiac-glyph{
+    font-family:'Fraunces', serif; font-size:38px; fill:#fff3dd;
+    filter:drop-shadow(0 0 8px rgba(255,225,180,0.85)) drop-shadow(0 0 18px rgba(255,190,110,0.4));
+  }
+  .conn-zodiac-label{ font-family:'Space Mono', monospace; font-size:9px; letter-spacing:2.5px; fill:#e6c9a0; opacity:0.7; }
+
+  .conn-bridge{
+    stroke:#ffdca0; stroke-width:1.2; fill:none; stroke-dasharray:6 6; opacity:0.3;
+    filter:drop-shadow(0 0 5px rgba(255,220,160,0.6));
+    transition: opacity 0.8s ease, stroke-width 0.8s ease;
+  }
+  .conn-pressing .conn-bridge{ opacity:0.9; stroke-width:2.2; }
+
+  .conn-scorpion{
+    opacity:0; transform:scale(0.7); transform-origin:210px 165px;
+    transition: opacity 1s ease 0.35s, transform 1s cubic-bezier(0.34,1.4,0.4,1) 0.35s;
+  }
+  .conn-pressing .conn-scorpion{ opacity:1; transform:scale(1); }
+
+  .conn-hold-target{
+    position:relative; z-index:5; margin:10px auto 0; width:240px; padding:18px 0; text-align:center;
+    border-radius:26px; border:1px solid rgba(255,214,140,0.35); background:rgba(0,0,0,0.15);
+    font-family:'Space Mono', monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    color:#ffdca0; cursor:pointer; transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .conn-hold-target.conn-pressing-btn{ background:rgba(255,200,120,0.18); transform:scale(0.97); }
+
+  .conn-note{
+    position:relative; z-index:5; max-width:420px; margin:16px auto 0; padding:0 30px; text-align:center;
+    font-family:'Literata', serif; font-style:italic; color:#e6c9a0; font-size:12.5px; line-height:1.6;
+  }
+
+  .conn-shooting-star{
+    position:absolute; width:2px; height:2px; background:#fff3dd; border-radius:50%;
+    box-shadow:0 0 6px 1px rgba(255,240,210,0.9); opacity:0; z-index:2;
+  }
+  .conn-shooting-star::after{
+    content:''; position:absolute; top:50%; right:100%; width:70px; height:1px;
+    background:linear-gradient(to left, rgba(255,240,210,0.85), transparent); transform:translateY(-50%);
+  }
+  @keyframes connShoot{
+    0%{ opacity:0; transform:translate(0,0); } 8%{ opacity:1; } 80%{ opacity:0.8; }
+    100%{ opacity:0; transform:translate(-260px, 170px); }
+  }
+
+  .conn-letters-section{ position:relative; z-index:5; max-width:420px; margin:26px auto 100px; padding:0 24px; }
+  .conn-letters-divider{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    font-family:'Space Mono', monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase;
+    color:rgba(230,201,160,0.65);
+  }
+  .conn-letters-divider::before, .conn-letters-divider::after{ content:''; flex:1; height:1px; background:rgba(255,214,140,0.25); }
+  #screen-connection .envelope{
+    background:rgba(255,230,190,0.06); border:1px solid rgba(255,214,140,0.2); box-shadow:none;
+  }
+  #screen-connection .env-title{ color:#fff3dd; }
+  #screen-connection .env-meta{ color:#e6c9a0; }
+  #screen-connection .empty-state{ color:rgba(230,201,160,0.55); }
+
+  @media print{
+    body *{ visibility:hidden; }
+    #letter-content, #letter-content *{ visibility:visible; }
+    #letter-content{ position:absolute; top:0; left:0; width:100%; box-shadow:none; }
+    .bottom-nav, .fab, #btn-print-letter, .back-link{ display:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="screen-setup">
+  <div class="header">
+    <div class="seal-logo"><span class="seal-init">?</span></div>
+    <div class="brand">Para Cuando<small>configuración inicial</small></div>
+  </div>
+  <div class="letter-paper">
+    <p class="letter-title" style="font-size:20px;">Antes de arrancar</p>
+    <p style="font-family:'Work Sans',sans-serif; font-size:14px; color:var(--ink-soft); margin-bottom:20px;">Esto se configura una sola vez. Después lo podés cambiar desde el modo Papá.</p>
+    <div class="field"><label>Nombre del hijo/a</label><input id="setup-name" placeholder="Neythan"></div>
+    <div class="field"><label>Fecha de nacimiento (de él/ella)</label>
+      <div class="row2" style="gap:6px;">
+        <select id="setup-birth-day"></select>
+        <select id="setup-birth-month"></select>
+        <select id="setup-birth-year"></select>
+      </div>
+    </div>
+    <div class="field"><label>Tu fecha de nacimiento (opcional, para que las cartas digan tu edad al escribirlas)</label>
+      <div class="row2" style="gap:6px;">
+        <select id="setup-papa-birth-day"></select>
+        <select id="setup-papa-birth-month"></select>
+        <select id="setup-papa-birth-year"></select>
+      </div>
+    </div>
+    <div class="field"><label>Firma con la que cerrás tus cartas</label><input id="setup-signature" type="text" placeholder="Con cariño, Papá"></div>
+    <div class="field"><label>PIN para abrir la app (4-6 números)</label><input id="setup-pin" type="text" inputmode="numeric" placeholder="ej: 2604"></div>
+    <div class="field"><label>Clave para el modo Papá</label><input id="setup-pass" type="text" placeholder="ej: 260226"></div>
+    <div class="field"><label>Clave especial para él (se la das vos en persona, más adelante)</label><input id="setup-special" type="text" placeholder="ej: SIEMPRE"></div>
+    <div class="field"><label>Clave para la sección de conexión (opcional)</label><input id="setup-connection" type="text" placeholder="ej: VIRGOYESCORPIO"></div>
+    <div class="error-msg" id="setup-error"></div>
+    <button class="btn btn-primary" id="btn-finish-setup">Crear Para Cuando</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-pin-gate">
+  <div class="special-box">
+    <div class="seal-logo" style="margin:0 auto 18px;"><span class="seal-init">?</span></div>
+    <p class="letter-title" style="font-size:20px;">Para Cuando</p>
+    <p style="font-family:'Literata',serif; font-style:italic; color:var(--ink-soft); margin-bottom:22px;">Ingresá el PIN para entrar.</p>
+    <input id="pin-gate-input" type="password" inputmode="numeric" placeholder="••••" style="width:100%; padding:14px; border-radius:8px; border:1.5px solid rgba(43,38,33,0.2); text-align:center; font-family:'Space Mono',monospace; font-size:20px; letter-spacing:6px; margin-bottom:10px; background:var(--card-bg);">
+    <div class="error-msg" id="pin-gate-error"></div>
+    <button class="btn btn-primary" id="btn-pin-gate-enter" style="margin-top:10px;">Entrar</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-mailbox">
+  <div class="header" style="position:relative;">
+    <button class="theme-toggle" id="theme-toggle">🌙</button>
+    <div class="seal-logo" id="seal-tap"><span class="seal-init">?</span></div>
+    <div class="brand" id="mailbox-brand">Para Cuando<small id="child-name-label">para —</small></div>
+    <div class="today-stamp" id="today-stamp-text"></div>
+    <button class="btn btn-ghost" id="btn-play-welcome" style="display:none; width:auto; padding:6px 14px; font-size:12px; margin-top:8px;">🔊 Escuchar bienvenida</button>
+    <audio id="welcome-audio-player" style="display:none;"></audio>
+  </div>
+  <div id="admin-indicator"></div>
+  <p class="subtitle" id="mailbox-subtitle">Cartas que fui dejando para vos, a su tiempo.</p>
+  <p class="subtitle" id="mailbox-counter" style="margin-top:-16px;"></p>
+  <button class="btn btn-ghost" id="btn-random-memory" style="margin-bottom:18px;">🎲 Abrir un recuerdo al azar</button>
+  <div id="letters-list"></div>
+  <div style="text-align:center; margin-top:10px;">
+    <a class="back-link" id="link-special-gate">🔒 Sección especial</a>
+  </div>
+  <button class="fab" id="fab-add" style="display:none;">+</button>
+</div>
+
+<div class="screen" id="screen-timeline">
+  <div class="header">
+    <div class="brand">Nuestra historia</div>
+  </div>
+  <p class="subtitle">Momentos, en orden, tal como pasaron.</p>
+  <span class="hist-mode-tag" id="hist-mode-tag">modo día</span>
+  <div class="hist-progress-rail" id="hist-progress-rail"></div>
+  <div class="stairwell" id="timeline-list"></div>
+  <button class="fab" id="fab-add-timeline" style="display:none;">+</button>
+</div>
+
+<div class="modal-overlay" id="modal-timeline-form">
+  <div class="modal">
+    <h3>Nuevo momento</h3>
+    <div class="field"><label>Foto (opcional)</label><input id="t-photo" type="file" accept="image/*"></div>
+    <div id="t-photo-preview" style="margin-bottom:10px;"></div>
+    <div class="field"><label>Fecha</label><input id="t-date" type="date"></div>
+    <div class="field"><label>Frase corta</label><input id="t-caption" placeholder="Tu primer paso, en la cocina"></div>
+    <div class="error-msg" id="timeline-form-error"></div>
+    <div class="row2">
+      <button class="btn btn-ghost" id="btn-timeline-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="btn-timeline-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-ajustes">
+  <div class="header"><div class="brand">Ajustes</div></div>
+  <div id="ajustes-content"></div>
+</div>
+
+<div class="bottom-nav" id="bottom-nav" style="display:none;">
+  <div class="nav-indicator" id="nav-indicator"></div>
+  <button class="nav-item" data-nav="screen-mailbox"><span class="nav-icon">📬</span>Buzón</button>
+  <button class="nav-item" data-nav="screen-timeline"><span class="nav-icon">🗺️</span>Historia</button>
+  <button class="nav-item" data-nav="screen-ajustes"><span class="nav-icon">⚙️</span>Ajustes</button>
+</div>
+
+<div class="modal-overlay" id="modal-admin-login">
+  <div class="modal">
+    <h3>Modo Papá</h3>
+    <div class="field"><label>Clave</label><input id="admin-pass-input" type="password" placeholder="••••••"></div>
+    <div class="error-msg" id="admin-error"></div>
+    <button class="btn btn-seal" id="btn-admin-login">Entrar</button>
+    <button class="btn btn-ghost" style="margin-top:10px;" id="btn-admin-cancel">Cancelar</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-letter">
+  <a class="back-link" id="link-back-from-letter">← volver al buzón</a>
+  <div class="letter-paper" id="letter-content"></div>
+  <button class="btn btn-ghost" id="btn-print-letter" style="margin-top:14px;">🖨️ Descargar esta carta</button>
+</div>
+
+<div class="modal-overlay" id="modal-letter-form">
+  <div class="modal">
+    <h3 id="form-title">Nueva carta</h3>
+    <input type="hidden" id="edit-letter-id">
+    <div class="field"><label>Título</label><input id="f-title" placeholder="Cuando te recibas"></div>
+    <div class="field"><label>Contenido</label><textarea id="f-body" placeholder="Escribí acá lo que quieras decirle..."></textarea></div>
+    <div class="field">
+      <label>Cuándo se desbloquea</label>
+      <select id="f-unlock-type">
+        <option value="immediate">Ya está disponible</option>
+        <option value="age">Cuando cumpla cierta edad</option>
+        <option value="date">En una fecha exacta</option>
+        <option value="special">Solo con la clave especial</option>
+        <option value="connection">Sección de conexión</option>
+      </select>
+    </div>
+    <div class="field" id="f-age-field" style="display:none;"><label>Edad</label><input id="f-unlock-age" type="number" placeholder="18"></div>
+    <div class="field" id="f-date-field" style="display:none;"><label>Fecha</label><input id="f-unlock-date" type="date"></div>
+    <div class="error-msg" id="letter-form-error"></div>
+    <div class="row2">
+      <button class="btn btn-ghost" id="btn-letter-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="btn-letter-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-special-gate">
+  <a class="back-link" id="link-back-from-gate">← volver al buzón</a>
+  <div class="special-box">
+    <div class="seal-logo"><span>★</span></div>
+    <p class="letter-title" style="font-size:20px;">Hay algo más</p>
+    <p style="font-family:'Literata',serif; font-style:italic; color:var(--ink-soft); margin-bottom:22px;">Si tenés la clave, es porque ya es momento.</p>
+    <input id="special-pass-input" type="text" placeholder="clave especial" style="width:100%; padding:12px; border-radius:8px; border:1.5px solid rgba(43,38,33,0.2); text-align:center; font-family:'Space Mono',monospace; margin-bottom:14px; background:var(--card-bg);">
+    <button class="btn btn-gold" id="btn-special-unlock">Abrir</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-special">
+  <a class="back-link" id="link-back-from-special">← volver al buzón</a>
+  <div class="header"><div class="seal-logo" style="background:radial-gradient(circle at 35% 30%, #d1a542, var(--gold));"><span style="color:#2B2621;">★</span></div><div class="brand">Sección especial</div></div>
+  <div id="special-list"></div>
+</div>
+
+<div class="screen" id="screen-connection-gate">
+  <a class="back-link" id="link-back-from-connection-gate">← volver al buzón</a>
+  <div class="special-box">
+    <div class="seal-logo" style="background:radial-gradient(circle at 32% 26%, #8a9578, var(--sage));"><span>💫</span></div>
+    <p class="letter-title" style="font-size:20px;">Una historia distinta</p>
+    <p style="font-family:'Literata',serif; font-style:italic; color:var(--ink-soft); margin-bottom:22px;">Esto no es para cualquiera. Si tenés la clave, entrá.</p>
+    <input id="connection-pass-input" type="text" placeholder="clave" style="width:100%; padding:12px; border-radius:8px; border:1.5px solid rgba(43,38,33,0.2); text-align:center; font-family:'Space Mono',monospace; margin-bottom:14px; background:#fbf6ec;">
+    <button class="btn btn-primary" style="background:var(--sage);" id="btn-connection-unlock">Abrir</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-connection">
+  <a class="back-link" id="link-back-from-connection" style="color:#e6c9a0;">← volver al buzón</a>
+  <div id="conn-motes"></div>
+
+  <div class="conn-banner">
+    <h1>Nuestra conexión</h1>
+  </div>
+
+  <div class="conn-sky" id="conn-sky">
+    <svg viewBox="0 0 420 300">
+      <g id="conn-virgo">
+        <circle class="conn-glyph-halo" cx="105" cy="130" r="34"/>
+        <text class="conn-zodiac-glyph" x="105" y="145" text-anchor="middle">&#9805;</text>
+        <text class="conn-zodiac-label" x="105" y="182" text-anchor="middle">VIRGO</text>
+      </g>
+      <g id="conn-scorpio">
+        <circle class="conn-glyph-halo" cx="318" cy="130" r="34"/>
+        <text class="conn-zodiac-glyph" x="318" y="145" text-anchor="middle">&#9807;</text>
+        <text class="conn-zodiac-label" x="318" y="182" text-anchor="middle">ESCORPIO</text>
+      </g>
+      <path class="conn-bridge" d="M 120 155 Q 210 190 300 155"/>
+      <g class="conn-scorpion">
+        <line class="conn-const-line" x1="185" y1="110" x2="200" y2="104"/>
+        <line class="conn-const-line" x1="200" y1="104" x2="212" y2="112"/>
+        <line class="conn-const-line" x1="212" y1="112" x2="208" y2="135"/>
+        <line class="conn-const-line" x1="208" y1="135" x2="218" y2="158"/>
+        <line class="conn-const-line" x1="218" y1="158" x2="233" y2="178"/>
+        <line class="conn-const-line" x1="233" y1="178" x2="243" y2="198"/>
+        <line class="conn-const-line" x1="243" y1="198" x2="238" y2="218"/>
+        <line class="conn-const-line" x1="238" y1="218" x2="222" y2="222"/>
+        <line class="conn-const-line" x1="222" y1="222" x2="215" y2="210"/>
+        <circle class="conn-star" cx="185" cy="110" r="2.2"/>
+        <circle class="conn-star" cx="200" cy="104" r="2.2"/>
+        <circle class="conn-star" cx="212" cy="112" r="2.4"/>
+        <circle class="conn-star conn-heart" cx="208" cy="135" r="3.4"/>
+        <circle class="conn-star" cx="218" cy="158" r="2.2"/>
+        <circle class="conn-star" cx="233" cy="178" r="2.2"/>
+        <circle class="conn-star" cx="243" cy="198" r="2.4"/>
+        <circle class="conn-star" cx="238" cy="218" r="2"/>
+        <circle class="conn-star conn-big" cx="222" cy="222" r="2.8"/>
+        <circle class="conn-star conn-big" cx="215" cy="210" r="2.6"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="conn-hold-target" id="conn-hold-target">Mantené presionado</div>
+
+  <p class="conn-note">Una sola energía, dos mitades. Sostenido, vuelven a ser uno. Soltás, y cada uno vuelve a su lugar.</p>
+
+  <div class="conn-letters-section">
+    <div class="conn-letters-divider"><span>Cartas de esta sección</span></div>
+    <div id="connection-list"></div>
+  </div>
+
+  <button class="fab" id="fab-add-connection" style="display:none; background:#e0a94a; color:#2a1c14;">+</button>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'para_cuando_data_v1';
+  var state = null;
+  var isAdmin = false;
+  var sealTapCount = 0;
+  var sealTapTimer = null;
+  var connectionTapCount = 0;
+  var connectionTapTimer = null;
+  var histObserver = null;
+  var memoryFallback = {};
+
+  function storageGet(key){
+    try { return localStorage.getItem(key); } catch(e){ return memoryFallback[key] || null; }
+  }
+  function storageSet(key, val){
+    try { localStorage.setItem(key, val); } catch(e){ memoryFallback[key] = val; }
+  }
+  function loadState(){
+    var raw = storageGet(STORAGE_KEY);
+    if(raw){ state = JSON.parse(raw); return true; }
+    return false;
+  }
+  function saveState(){ storageSet(STORAGE_KEY, JSON.stringify(state)); }
+
+  var NAV_SCREENS = ['screen-mailbox','screen-timeline','screen-ajustes'];
+
+  function $(id){ return document.getElementById(id); }
+  function showScreen(id){
+    var screens = document.querySelectorAll('.screen');
+    for(var i=0;i<screens.length;i++){ screens[i].classList.remove('active'); }
+    $(id).classList.add('active');
+
+    var showNav = NAV_SCREENS.indexOf(id) !== -1;
+    $('bottom-nav').style.display = showNav ? 'flex' : 'none';
+    document.body.classList.toggle('has-nav', showNav);
+    var navItems = document.querySelectorAll('.nav-item');
+    var activeIndex = -1;
+    for(var j=0;j<navItems.length;j++){
+      var isActive = navItems[j].getAttribute('data-nav') === id;
+      navItems[j].classList.toggle('active', isActive);
+      if(isActive) activeIndex = j;
+    }
+    if(activeIndex >= 0){
+      $('nav-indicator').style.transform = 'translateX(' + (activeIndex * 100) + '%)';
+    }
+    if(id === 'screen-mailbox' && state) renderMailbox();
+    if(id === 'screen-timeline') renderTimeline();
+    if(id === 'screen-ajustes') renderAjustes();
+  }
+  function closeModal(id){ $(id).classList.remove('active'); }
+  function openModal(id){ $(id).classList.add('active'); }
+
+  function getAgeYears(birthdateStr, atDate){
+    var b = new Date(birthdateStr);
+    var a = atDate || new Date();
+    var age = a.getFullYear() - b.getFullYear();
+    var m = a.getMonth() - b.getMonth();
+    if(m < 0 || (m===0 && a.getDate() < b.getDate())) age--;
+    return age;
+  }
+
+  function isUnlocked(letter){
+    if(isAdmin) return true;
+    if(letter.unlockType === 'immediate') return true;
+    if(letter.unlockType === 'special') return false;
+    if(letter.unlockType === 'age') return getAgeYears(state.birthdate) >= Number(letter.unlockAge);
+    if(letter.unlockType === 'date') return new Date() >= new Date(letter.unlockDate);
+    return false;
+  }
+
+  function unlockLabel(letter){
+    if(letter.unlockType === 'immediate') return 'disponible';
+    if(letter.unlockType === 'age') return 'a los ' + letter.unlockAge;
+    if(letter.unlockType === 'date') return new Date(letter.unlockDate).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+    if(letter.unlockType === 'special') return 'clave especial';
+    return '';
+  }
+
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function renderMailbox(){
+    applyBranding();
+    $('child-name-label').textContent = 'para ' + state.childName;
+    $('fab-add').style.display = isAdmin ? 'flex' : 'none';
+    $('admin-indicator').innerHTML = isAdmin ? '<div class="admin-bar"><span>MODO PAPÁ</span><a data-action="logout-admin">salir</a></div>' : '';
+    $('mailbox-subtitle').textContent = isAdmin
+      ? 'Ves todas las cartas, estén desbloqueadas o no.'
+      : 'Cartas que fui dejando para vos, a su tiempo.';
+
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('es-AR', {day:'2-digit', month:'short', year:'numeric'});
+    var timeStr = now.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+    $('today-stamp-text').textContent = 'llegó hoy · ' + dateStr + ' · ' + timeStr;
+
+    var list = $('letters-list');
+    var visible = state.letters.filter(function(l){ return l.unlockType !== 'special' && l.unlockType !== 'connection'; });
+    var pendingCount = visible.filter(function(l){ return !isUnlocked(l); }).length;
+    var counterEl = $('mailbox-counter');
+    if(counterEl){
+      counterEl.textContent = pendingCount > 0
+        ? (pendingCount === 1 ? 'Tenés 1 carta más por abrirse.' : 'Tenés ' + pendingCount + ' cartas más por abrirse.')
+        : '';
+    }
+    if(visible.length === 0){
+      list.innerHTML = '<div class="empty-state">Todavía no hay cartas en el buzón.</div>';
+      return;
+    }
+    list.innerHTML = visible.map(function(l){
+      var unlocked = isUnlocked(l);
+      var isNew = unlocked && (!state.seenLetterIds || state.seenLetterIds.indexOf(l.id) === -1);
+      var writtenDate = new Date(l.writtenDate).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+      var adminActions = isAdmin ? '<div class="letter-list-actions"><button class="btn btn-ghost" data-action="edit-letter" data-id="'+l.id+'">Editar</button><button class="btn btn-ghost" data-action="delete-letter" data-id="'+l.id+'">Eliminar</button></div>' : '';
+      var newDot = isNew ? '<span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--seal); margin-right:6px; vertical-align:middle;"></span>' : '';
+      return '<div class="envelope ' + (unlocked?'':'locked') + '" data-action="' + (unlocked?'open-letter':'locked-alert') + '" data-id="' + l.id + '">'
+        + '<div class="envelope-top"><div>'
+        + '<p class="env-title">' + newDot + (unlocked ? escapeHtml(l.title) : '✉️ ' + escapeHtml(l.title)) + '</p>'
+        + '<p class="env-meta">escrita el ' + writtenDate + '</p>'
+        + '</div><div class="postmark">' + (unlocked?'ABIERTA':'PARA CUANDO') + '<br>' + unlockLabel(l) + '</div></div>'
+        + '<span class="lock-badge ' + (unlocked?'unlocked-badge':'') + '">' + (unlocked?'✓ disponible':'🔒 aún cerrada') + '</span>'
+        + adminActions
+        + '</div>';
+    }).join('');
+  }
+
+  function openRandomMemory(){
+    var pool = [];
+    state.letters.filter(function(l){
+      return l.unlockType !== 'special' && l.unlockType !== 'connection' && isUnlocked(l);
+    }).forEach(function(l){ pool.push({type:'letter', data:l}); });
+    (state.timeline || []).forEach(function(t){ pool.push({type:'timeline', data:t}); });
+
+    if(pool.length === 0){
+      alert('Todavía no hay recuerdos disponibles para mostrar.');
+      return;
+    }
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    if(pick.type === 'letter'){
+      openLetter(pick.data.id);
+    } else {
+      var t = pick.data;
+      var d = new Date(t.date).toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+      $('letter-content').innerHTML =
+        '<div class="letter-stamp">Un momento de Nuestra historia — ' + d + '</div>'
+        + (t.photo ? '<img src="'+t.photo+'" style="width:100%;border-radius:6px;margin-bottom:14px;">' : '')
+        + '<p class="letter-body">' + escapeHtml(t.caption) + '</p>';
+      showScreen('screen-letter');
+    }
+  }
+
+  function openLetter(id){
+    var l = state.letters.find(function(x){ return x.id===id; });
+    if(!l) return;
+    if(!state.seenLetterIds) state.seenLetterIds = [];
+    if(state.seenLetterIds.indexOf(id) === -1){
+      state.seenLetterIds.push(id);
+      saveState();
+    }
+    var writtenDate = new Date(l.writtenDate);
+    var papiAge = l.writtenAsAge ? (', yo tenía ' + l.writtenAsAge + ' años') : '';
+    var signatureHtml = state.signature ? '<p class="letter-signature">' + escapeHtml(state.signature) + '</p>' : '';
+    $('letter-content').innerHTML = '<div class="letter-stamp">Escrita el ' + writtenDate.toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'}) + papiAge + '</div>'
+      + '<p class="letter-title">' + escapeHtml(l.title) + '</p>'
+      + '<p class="letter-body">' + escapeHtml(l.body) + '</p>'
+      + signatureHtml;
+    showScreen('screen-letter');
+  }
+
+  function toggleUnlockFields(){
+    var t = $('f-unlock-type').value;
+    $('f-age-field').style.display = t==='age' ? 'block':'none';
+    $('f-date-field').style.display = t==='date' ? 'block':'none';
+  }
+
+  var DRAFT_KEY = 'para_cuando_draft_v1';
+  var draftSaveTimer = null;
+
+  function saveDraftNow(){
+    var draft = {
+      editId: $('edit-letter-id').value || null,
+      title: $('f-title').value,
+      body: $('f-body').value,
+      unlockType: $('f-unlock-type').value,
+      unlockAge: $('f-unlock-age').value,
+      unlockDate: $('f-unlock-date').value,
+      savedAt: Date.now()
+    };
+    storageSet(DRAFT_KEY, JSON.stringify(draft));
+  }
+  function scheduleDraftSave(){
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(saveDraftNow, 500);
+  }
+  function clearDraft(){ storageSet(DRAFT_KEY, ''); }
+  function getDraft(){
+    var raw = storageGet(DRAFT_KEY);
+    if(!raw) return null;
+    try { return JSON.parse(raw); } catch(e){ return null; }
+  }
+
+  function openLetterModal(id){
+    $('form-title').textContent = id ? 'Editar carta' : 'Nueva carta';
+    $('edit-letter-id').value = id || '';
+    $('letter-form-error').textContent = '';
+
+    var draft = getDraft();
+    var matchesDraft = draft && (draft.editId || null) === (id || null);
+    if(matchesDraft && (draft.title || draft.body)){
+      var minsAgo = Math.max(1, Math.round((Date.now() - draft.savedAt) / 60000));
+      var recover = confirm('Tenés un borrador sin guardar de hace ' + minsAgo + ' min. ¿Querés recuperarlo?');
+      if(recover){
+        $('f-title').value = draft.title;
+        $('f-body').value = draft.body;
+        $('f-unlock-type').value = draft.unlockType;
+        $('f-unlock-age').value = draft.unlockAge;
+        $('f-unlock-date').value = draft.unlockDate;
+        toggleUnlockFields();
+        openModal('modal-letter-form');
+        return;
+      } else {
+        clearDraft();
+      }
+    }
+
+    if(id){
+      var l = state.letters.find(function(x){ return x.id===id; });
+      $('f-title').value = l.title;
+      $('f-body').value = l.body;
+      $('f-unlock-type').value = l.unlockType;
+      $('f-unlock-age').value = l.unlockAge || '';
+      $('f-unlock-date').value = l.unlockDate || '';
+    } else {
+      $('f-title').value = '';
+      $('f-body').value = '';
+      $('f-unlock-type').value = 'immediate';
+      $('f-unlock-age').value = '';
+      $('f-unlock-date').value = '';
+    }
+    toggleUnlockFields();
+    openModal('modal-letter-form');
+  }
+
+  function saveLetter(){
+    var id = $('edit-letter-id').value;
+    var title = $('f-title').value.trim();
+    var body = $('f-body').value.trim();
+    var unlockType = $('f-unlock-type').value;
+    var unlockAge = $('f-unlock-age').value;
+    var unlockDate = $('f-unlock-date').value;
+    if(!title || !body){ $('letter-form-error').textContent = 'Falta título o contenido.'; return; }
+    if(id){
+      var l = state.letters.find(function(x){ return x.id===id; });
+      Object.assign(l, {title:title, body:body, unlockType:unlockType, unlockAge:unlockAge, unlockDate:unlockDate});
+    } else {
+      state.letters.push({
+        id: 'l_' + Date.now(),
+        title: title, body: body, unlockType: unlockType, unlockAge: unlockAge, unlockDate: unlockDate,
+        writtenDate: new Date().toISOString(),
+        writtenAsAge: state.papaBirthdate ? getAgeYears(state.papaBirthdate) : null
+      });
+    }
+    saveState();
+    clearDraft();
+    closeModal('modal-letter-form');
+    renderMailbox();
+  }
+
+  function deleteLetter(id){
+    if(!confirm('¿Eliminar esta carta para siempre?')) return;
+    state.letters = state.letters.filter(function(x){ return x.id!==id; });
+    saveState();
+    renderMailbox();
+  }
+
+  function renderSpecial(){
+    var list = state.letters.filter(function(l){ return l.unlockType==='special'; });
+    var container = $('special-list');
+    if(list.length===0){
+      container.innerHTML = '<div class="empty-state">Todavía no hay nada acá. Pronto sí.</div>';
+      return;
+    }
+    container.innerHTML = list.map(function(l){
+      var writtenDate = new Date(l.writtenDate).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+      var adminActions = isAdmin ? '<div class="letter-list-actions"><button class="btn btn-ghost" data-action="edit-letter" data-id="'+l.id+'">Editar</button><button class="btn btn-ghost" data-action="delete-letter" data-id="'+l.id+'">Eliminar</button></div>' : '';
+      return '<div class="envelope" data-action="open-letter" data-id="' + l.id + '">'
+        + '<p class="env-title">' + escapeHtml(l.title) + '</p>'
+        + '<p class="env-meta">escrita el ' + writtenDate + '</p>'
+        + adminActions + '</div>';
+    }).join('');
+  }
+
+  function renderConnection(){
+    initConnectionMotes();
+    $('fab-add-connection').style.display = isAdmin ? 'flex' : 'none';
+    var list = state.letters.filter(function(l){ return l.unlockType==='connection'; });
+    var container = $('connection-list');
+    if(list.length===0){
+      container.innerHTML = '<div class="empty-state">Todavía no hay nada acá. Pronto sí.</div>';
+      return;
+    }
+    container.innerHTML = list.map(function(l){
+      var writtenDate = new Date(l.writtenDate).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+      var adminActions = isAdmin ? '<div class="letter-list-actions"><button class="btn btn-ghost" data-action="edit-letter" data-id="'+l.id+'">Editar</button><button class="btn btn-ghost" data-action="delete-letter" data-id="'+l.id+'">Eliminar</button></div>' : '';
+      return '<div class="envelope" data-action="open-letter" data-id="' + l.id + '">'
+        + '<p class="env-title">' + escapeHtml(l.title) + '</p>'
+        + '<p class="env-meta">escrita el ' + writtenDate + '</p>'
+        + adminActions + '</div>';
+    }).join('');
+  }
+
+  var MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  function populateDMY(prefix){
+    var daySel = $(prefix + '-day'), monthSel = $(prefix + '-month'), yearSel = $(prefix + '-year');
+    daySel.innerHTML = '<option value="">Día</option>';
+    for(var d=1; d<=31; d++){ daySel.innerHTML += '<option value="'+d+'">'+d+'</option>'; }
+    monthSel.innerHTML = '<option value="">Mes</option>';
+    for(var m=0; m<12; m++){ monthSel.innerHTML += '<option value="'+(m+1)+'">'+MONTH_NAMES[m]+'</option>'; }
+    var thisYear = new Date().getFullYear();
+    yearSel.innerHTML = '<option value="">Año</option>';
+    for(var y=thisYear; y>=1950; y--){ yearSel.innerHTML += '<option value="'+y+'">'+y+'</option>'; }
+  }
+
+  function readDMY(prefix){
+    var d = $(prefix + '-day').value, m = $(prefix + '-month').value, y = $(prefix + '-year').value;
+    if(!d || !m || !y) return '';
+    return y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+  }
+
+  function finishSetup(){
+    var name = $('setup-name').value.trim();
+    var birth = readDMY('setup-birth');
+    var papaBirth = readDMY('setup-papa-birth');
+    var signature = $('setup-signature').value.trim();
+    var pin = $('setup-pin').value.trim();
+    var pass = $('setup-pass').value.trim();
+    var special = $('setup-special').value.trim();
+    var connection = $('setup-connection').value.trim();
+    if(!name || !birth || !pin || !pass){
+      $('setup-error').textContent = 'Completá nombre, fecha de nacimiento, PIN y clave.';
+      return;
+    }
+    state = {
+      childName:name, birthdate:birth, papaBirthdate: papaBirth || null,
+      signature: signature || 'Con cariño, Papá',
+      entryPin:pin, adminPass:pass, specialPass: special || 'ESPECIAL',
+      connectionPass: connection || 'CONEXION',
+      letters:[], timeline:[], seenLetterIds:[]
+    };
+    saveState();
+    renderMailbox();
+    showScreen('screen-mailbox');
+  }
+
+  /* ---------- Nuestra historia (línea de tiempo) ---------- */
+  var pendingPhotoDataUrl = null;
+
+  function compressImage(file, maxWidth, callback){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var scale = Math.min(1, maxWidth / img.width);
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        callback(canvas.toDataURL('image/jpeg', 0.72));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function isHistNight(){
+    var h = new Date().getHours();
+    return h >= 20 || h < 6;
+  }
+
+  function renderTimeline(){
+    if(!state.timeline) state.timeline = [];
+    $('fab-add-timeline').style.display = isAdmin ? 'flex' : 'none';
+
+    var screen = $('screen-timeline');
+    var night = isHistNight();
+    screen.classList.toggle('hist-night', night);
+    $('hist-mode-tag').textContent = night ? 'modo noche' : 'modo día';
+
+    var sorted = state.timeline.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
+    var container = $('timeline-list');
+    var rail = $('hist-progress-rail');
+
+    if(sorted.length === 0){
+      container.innerHTML = '<div class="empty-state">Todavía no hay momentos cargados acá.</div>';
+      rail.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = sorted.map(function(t){
+      var d = new Date(t.date).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+      var adminActions = isAdmin ? '<div class="letter-list-actions"><button class="btn btn-ghost" data-action="delete-timeline" data-id="'+t.id+'">Eliminar</button></div>' : '';
+      return '<div class="terrace">'
+        + '<div class="t-block">'
+        + '<div class="t-face t-top"></div>'
+        + '<div class="t-face t-side-right"></div>'
+        + '<div class="t-face t-side-left"></div>'
+        + '<div class="t-card">'
+        + (t.photo ? '<img src="'+t.photo+'" alt="">' : '<div class="t-nophoto"></div>')
+        + '<div class="t-date">' + d + '</div>'
+        + '<div class="t-caption">' + escapeHtml(t.caption) + '</div>'
+        + '</div></div>'
+        + '<div class="t-light-dot"></div>'
+        + adminActions
+        + '</div>';
+    }).join('');
+
+    rail.innerHTML = sorted.map(function(_, i){ return '<div class="hist-rail-dot" data-index="'+i+'"></div>'; }).join('');
+
+    var terraces = container.querySelectorAll('.terrace');
+    var railDots = rail.querySelectorAll('.hist-rail-dot');
+    if(histObserver) histObserver.disconnect();
+    histObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          var idx = Array.prototype.indexOf.call(terraces, entry.target);
+          entry.target.classList.add('hist-visible');
+          railDots.forEach(function(d, i){ d.classList.toggle('active', i === idx); });
+        }
+      });
+    }, { threshold: 0.35 });
+    terraces.forEach(function(t){ histObserver.observe(t); });
+  }
+
+  function openTimelineModal(){
+    pendingPhotoDataUrl = null;
+    $('t-photo').value = '';
+    $('t-photo-preview').innerHTML = '';
+    $('t-date').value = '';
+    $('t-caption').value = '';
+    $('timeline-form-error').textContent = '';
+    openModal('modal-timeline-form');
+  }
+
+  function saveTimelineEntry(){
+    var date = $('t-date').value;
+    var caption = $('t-caption').value.trim();
+    if(!date || !caption){ $('timeline-form-error').textContent = 'Falta la fecha o la frase.'; return; }
+    if(!state.timeline) state.timeline = [];
+    state.timeline.push({ id: 't_' + Date.now(), date: date, caption: caption, photo: pendingPhotoDataUrl });
+    saveState();
+    closeModal('modal-timeline-form');
+    renderTimeline();
+  }
+
+  function deleteTimelineEntry(id){
+    if(!confirm('¿Eliminar este momento?')) return;
+    state.timeline = state.timeline.filter(function(x){ return x.id!==id; });
+    saveState();
+    renderTimeline();
+  }
+
+  /* ---------- Ajustes ---------- */
+  function renderAjustes(){
+    var el = $('ajustes-content');
+    if(!isAdmin){
+      el.innerHTML = '<div class="locked-settings">Esto es solo para el modo Papá.</div>';
+      return;
+    }
+    el.innerHTML =
+      '<div class="settings-section">'
+      + '<h4>Copia de seguridad</h4>'
+      + '<button class="btn btn-primary" data-action="export-backup">Descargar copia (.json)</button>'
+      + '<p class="settings-note">Guardá este archivo en Drive o donde no se pierda. Si cambiás de celular, lo importás acá abajo.</p>'
+      + '<div style="height:10px;"></div>'
+      + '<input type="file" accept="application/json" id="import-file-input" style="display:none;">'
+      + '<button class="btn btn-ghost" data-action="import-backup">Importar copia</button>'
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>Próximas a abrirse</h4>'
+      + renderUpcomingList()
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>Audio de bienvenida</h4>'
+      + (state.welcomeAudio
+          ? '<p class="settings-note">Ya tenés uno grabado.</p><button class="btn btn-ghost" data-action="delete-welcome-audio">Eliminar audio</button>'
+          : '<p class="settings-note">Un audio corto (máx. 20 seg) que él puede escuchar tocando el botón del buzón.</p>')
+      + '<div style="height:8px;"></div>'
+      + '<button class="btn btn-seal" id="btn-record-audio" data-action="record-welcome-audio">🎙️ Grabar (20 seg)</button>'
+      + '<div class="error-msg" id="audio-record-status"></div>'
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>Firma de tus cartas</h4>'
+      + '<div class="field"><input id="ajustes-new-signature" type="text" placeholder="Con cariño, Papá"></div>'
+      + '<button class="btn btn-ghost" data-action="save-signature">Guardar firma</button>'
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>PIN de entrada a la app</h4>'
+      + '<div class="field"><input id="ajustes-new-pin" type="text" inputmode="numeric" placeholder="nuevo PIN"></div>'
+      + '<button class="btn btn-ghost" data-action="save-entry-pin">Guardar PIN</button>'
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>Clave del modo Papá</h4>'
+      + '<div class="field"><input id="ajustes-new-admin-pass" type="text" placeholder="nueva clave"></div>'
+      + '<button class="btn btn-ghost" data-action="save-admin-pass">Guardar clave</button>'
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>Clave especial para él</h4>'
+      + '<div class="field"><input id="ajustes-new-special-pass" type="text" placeholder="nueva clave especial"></div>'
+      + '<button class="btn btn-ghost" data-action="save-special-pass">Guardar clave</button>'
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>Clave de la sección de conexión</h4>'
+      + '<div class="field"><input id="ajustes-new-connection-pass" type="text" placeholder="nueva clave"></div>'
+      + '<button class="btn btn-ghost" data-action="save-connection-pass">Guardar clave</button>'
+      + '</div>'
+      + '<div class="settings-section">'
+      + '<h4>Salir del modo Papá</h4>'
+      + '<button class="btn btn-ghost" data-action="logout-admin">Salir</button>'
+      + '</div>';
+  }
+
+  var mediaRecorder = null;
+  var audioChunks = [];
+
+  function recordWelcomeAudio(){
+    var statusEl = $('audio-record-status');
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      statusEl.textContent = 'Este navegador no permite grabar audio acá.';
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = function(e){ audioChunks.push(e.data); };
+      mediaRecorder.onstop = function(){
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        var blob = new Blob(audioChunks, {type:'audio/webm'});
+        var reader = new FileReader();
+        reader.onload = function(){
+          state.welcomeAudio = reader.result;
+          saveState();
+          applyBranding();
+          renderAjustes();
+        };
+        reader.readAsDataURL(blob);
+      };
+      mediaRecorder.start();
+      statusEl.textContent = 'Grabando… 20 segundos.';
+      setTimeout(function(){
+        if(mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+      }, 20000);
+    }).catch(function(){
+      statusEl.textContent = 'No se pudo acceder al micrófono.';
+    });
+  }
+
+  function deleteWelcomeAudio(){
+    if(!confirm('¿Eliminar el audio de bienvenida?')) return;
+    state.welcomeAudio = null;
+    saveState();
+    applyBranding();
+    renderAjustes();
+  }
+
+  function playWelcomeAudio(){
+    if(!state.welcomeAudio) return;
+    var player = $('welcome-audio-player');
+    player.src = state.welcomeAudio;
+    player.play();
+  }
+
+  function exportBackup(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'para-cuando-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importBackupFile(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try {
+        var parsed = JSON.parse(e.target.result);
+        if(!parsed.childName || !parsed.birthdate){ alert('Ese archivo no parece una copia válida.'); return; }
+        state = parsed;
+        if(!state.timeline) state.timeline = [];
+        saveState();
+        renderMailbox();
+        renderAjustes();
+        alert('Copia importada correctamente.');
+      } catch(err){
+        alert('No se pudo leer ese archivo.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  var INACTIVITY_MS = 5 * 60 * 1000;
+  var inactivityTimer = null;
+
+  function lockApp(){
+    if(!state || !state.entryPin) return;
+    var pinScreenAlready = document.getElementById('screen-pin-gate').classList.contains('active');
+    var setupActive = document.getElementById('screen-setup').classList.contains('active');
+    if(pinScreenAlready || setupActive) return;
+    isAdmin = false;
+    $('pin-gate-input').value = '';
+    showScreen('screen-pin-gate');
+  }
+  function resetInactivityTimer(){
+    if(!state || !state.entryPin) return;
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(lockApp, INACTIVITY_MS);
+  }
+
+  function getUnlockDate(letter){
+    if(letter.unlockType === 'date') return new Date(letter.unlockDate);
+    if(letter.unlockType === 'age' && letter.unlockAge !== ''){
+      var b = new Date(state.birthdate);
+      return new Date(b.getFullYear() + Number(letter.unlockAge), b.getMonth(), b.getDate());
+    }
+    return null;
+  }
+
+  function renderUpcomingList(){
+    var upcoming = state.letters
+      .filter(function(l){ return (l.unlockType === 'age' || l.unlockType === 'date') && !isUnlockedIgnoringAdmin(l); })
+      .map(function(l){ return { letter:l, date: getUnlockDate(l) }; })
+      .filter(function(x){ return x.date; })
+      .sort(function(a,b){ return a.date - b.date; });
+    if(upcoming.length === 0){
+      return '<p class="settings-note">No hay ninguna con fecha programada por ahora.</p>';
+    }
+    var today = new Date();
+    return upcoming.map(function(x){
+      var days = Math.ceil((x.date - today) / (1000*60*60*24));
+      var when = days <= 0 ? 'ya se cumplió' : (days === 1 ? 'en 1 día' : 'en ' + days + ' días');
+      var dateStr = x.date.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+      return '<p class="settings-note" style="font-style:normal;"><strong>' + escapeHtml(x.letter.title) + '</strong> — ' + dateStr + ' (' + when + ')</p>';
+    }).join('');
+  }
+
+  function isUnlockedIgnoringAdmin(letter){
+    if(letter.unlockType === 'immediate') return true;
+    if(letter.unlockType === 'special') return true;
+    if(letter.unlockType === 'age') return getAgeYears(state.birthdate) >= Number(letter.unlockAge);
+    if(letter.unlockType === 'date') return new Date() >= new Date(letter.unlockDate);
+    return false;
+  }
+
+  function applyBranding(){
+    if(!state) return;
+    var letter = (state.childName || '?').trim().charAt(0).toUpperCase() || '?';
+    var initEls = document.querySelectorAll('.seal-init');
+    for(var i=0;i<initEls.length;i++){ initEls[i].textContent = letter; }
+    $('btn-play-welcome').style.display = state.welcomeAudio ? 'inline-block' : 'none';
+  }
+
+  function tryPinGate(){
+    var val = $('pin-gate-input').value.trim();
+    if(!val){ $('pin-gate-error').textContent = 'Escribí un PIN.'; return; }
+    if(!state.entryPin){
+      // Config vieja sin PIN todavía (o primera vez): este PIN queda como el definitivo.
+      state.entryPin = val;
+      saveState();
+    }
+    if(val === state.entryPin){
+      $('pin-gate-input').value = '';
+      $('pin-gate-error').textContent = '';
+      renderMailbox();
+      showScreen('screen-mailbox');
+      resetInactivityTimer();
+    } else {
+      $('pin-gate-error').textContent = 'PIN incorrecto.';
+    }
+  }
+
+  function tryAdminLogin(){
+    var val = $('admin-pass-input').value;
+    if(val === state.adminPass){
+      isAdmin = true;
+      $('admin-pass-input').value='';
+      $('admin-error').textContent = '';
+      closeModal('modal-admin-login');
+      renderMailbox();
+    } else {
+      $('admin-error').textContent = 'Clave incorrecta.';
+    }
+  }
+
+  function trySpecialUnlock(){
+    var val = $('special-pass-input').value.trim();
+    if(val.toUpperCase() === state.specialPass.toUpperCase()){
+      renderSpecial();
+      showScreen('screen-special');
+    } else {
+      alert('Esa no es.');
+    }
+  }
+
+  function tryConnectionUnlock(){
+    var val = $('connection-pass-input').value.trim();
+    if(!val) return;
+    if(!state.connectionPass){
+      state.connectionPass = val;
+      saveState();
+    }
+    if(val.toUpperCase() === (state.connectionPass || '').toUpperCase()){
+      renderConnection();
+      showScreen('screen-connection');
+    } else {
+      alert('Esa no es.');
+    }
+  }
+
+  /* ---------- event wiring (sin onclick inline) ---------- */
+  /* ---------- Nuestra conexión: partículas, estrella fugaz, gesto de unión ---------- */
+  function initConnectionMotes(){
+    var container = $('conn-motes');
+    if(!container || container.dataset.built) return;
+    container.dataset.built = '1';
+    for(var i=0; i<22; i++){
+      var mote = document.createElement('div');
+      mote.className = 'conn-mote';
+      var size = 2 + Math.random()*3.5;
+      mote.style.width = size + 'px'; mote.style.height = size + 'px';
+      mote.style.left = (Math.random()*100) + '%';
+      mote.style.setProperty('--dx', (Math.random()*60 - 30) + 'px');
+      var duration = 9 + Math.random()*10;
+      mote.style.animationDuration = duration + 's';
+      mote.style.animationDelay = (Math.random()*duration) + 's';
+      container.appendChild(mote);
+    }
+    spawnConnShootingStar();
+  }
+  function spawnConnShootingStar(){
+    var screen = $('screen-connection');
+    if(!screen) return;
+    var star = document.createElement('div');
+    star.className = 'conn-shooting-star';
+    star.style.top = (10 + Math.random()*25) + '%';
+    star.style.left = (55 + Math.random()*35) + '%';
+    star.style.animation = 'connShoot 1.3s ease-out forwards';
+    screen.appendChild(star);
+    setTimeout(function(){ star.remove(); }, 1400);
+    setTimeout(spawnConnShootingStar, 5000 + Math.random()*8000);
+  }
+
+  function wireConnectionHold(){
+    var sky = $('conn-sky');
+    var holdTarget = $('conn-hold-target');
+    var pressing = false;
+    function start(e){
+      pressing = true;
+      sky.classList.add('conn-pressing');
+      holdTarget.classList.add('conn-pressing-btn');
+      if(e && e.pointerId !== undefined && holdTarget.setPointerCapture){
+        try{ holdTarget.setPointerCapture(e.pointerId); }catch(err){}
+      }
+      if(e && e.preventDefault) e.preventDefault();
+    }
+    function end(){
+      if(!pressing) return;
+      pressing = false;
+      sky.classList.remove('conn-pressing');
+      holdTarget.classList.remove('conn-pressing-btn');
+    }
+    holdTarget.addEventListener('pointerdown', start);
+    holdTarget.addEventListener('mousedown', start);
+    holdTarget.addEventListener('touchstart', start, {passive:false});
+    document.addEventListener('pointerup', end);
+    document.addEventListener('mouseup', end);
+    document.addEventListener('touchend', end);
+    document.addEventListener('touchcancel', end);
+  }
+
+  function wireEvents(){
+    $('btn-finish-setup').addEventListener('click', finishSetup);
+    $('btn-admin-login').addEventListener('click', tryAdminLogin);
+    $('btn-pin-gate-enter').addEventListener('click', tryPinGate);
+    $('pin-gate-input').addEventListener('keydown', function(e){ if(e.key==='Enter') tryPinGate(); });
+    $('btn-admin-cancel').addEventListener('click', function(){ $('admin-error').textContent=''; closeModal('modal-admin-login'); });
+    $('btn-letter-cancel').addEventListener('click', function(){ clearDraft(); closeModal('modal-letter-form'); });
+    $('btn-letter-save').addEventListener('click', saveLetter);
+    ['f-title','f-body','f-unlock-type','f-unlock-age','f-unlock-date'].forEach(function(fid){
+      $(fid).addEventListener('input', scheduleDraftSave);
+    });
+    $('btn-special-unlock').addEventListener('click', trySpecialUnlock);
+    $('btn-connection-unlock').addEventListener('click', tryConnectionUnlock);
+    $('f-unlock-type').addEventListener('change', toggleUnlockFields);
+    $('link-special-gate').addEventListener('click', function(){ showScreen('screen-special-gate'); });
+    $('link-back-from-letter').addEventListener('click', function(){ showScreen('screen-mailbox'); });
+    $('link-back-from-gate').addEventListener('click', function(){ showScreen('screen-mailbox'); });
+    $('link-back-from-special').addEventListener('click', function(){ showScreen('screen-mailbox'); });
+    $('link-back-from-connection-gate').addEventListener('click', function(){ showScreen('screen-mailbox'); });
+    $('link-back-from-connection').addEventListener('click', function(){ showScreen('screen-mailbox'); });
+    $('fab-add').addEventListener('click', function(){ openLetterModal(); });
+    $('btn-random-memory').addEventListener('click', openRandomMemory);
+    $('theme-toggle').addEventListener('click', toggleTheme);
+    $('btn-play-welcome').addEventListener('click', playWelcomeAudio);
+    $('btn-print-letter').addEventListener('click', function(){ window.print(); });
+    $('fab-add-timeline').addEventListener('click', openTimelineModal);
+    $('fab-add-connection').addEventListener('click', function(){
+      openLetterModal();
+      $('f-unlock-type').value = 'connection';
+      toggleUnlockFields();
+    });
+    wireConnectionHold();
+    $('btn-timeline-cancel').addEventListener('click', function(){ closeModal('modal-timeline-form'); });
+    $('btn-timeline-save').addEventListener('click', saveTimelineEntry);
+    $('t-photo').addEventListener('change', function(e){
+      var file = e.target.files[0];
+      if(!file) return;
+      compressImage(file, 800, function(dataUrl){
+        pendingPhotoDataUrl = dataUrl;
+        $('t-photo-preview').innerHTML = '<img src="'+dataUrl+'" style="width:100%;border-radius:6px;">';
+      });
+    });
+
+    var navItemsList = document.querySelectorAll('.nav-item');
+    for(var n=0;n<navItemsList.length;n++){
+      navItemsList[n].addEventListener('click', function(){ showScreen(this.getAttribute('data-nav')); });
+    }
+
+    ['click','touchstart','keydown','scroll'].forEach(function(evt){
+      document.addEventListener(evt, resetInactivityTimer, {passive:true});
+    });
+
+    // allow Enter key on setup/login/special inputs
+    $('setup-special').addEventListener('keydown', function(e){ if(e.key==='Enter') finishSetup(); });
+    $('admin-pass-input').addEventListener('keydown', function(e){ if(e.key==='Enter') tryAdminLogin(); });
+    $('special-pass-input').addEventListener('keydown', function(e){ if(e.key==='Enter') trySpecialUnlock(); });
+    $('connection-pass-input').addEventListener('keydown', function(e){ if(e.key==='Enter') tryConnectionUnlock(); });
+
+    // seal tap -> modo papá oculto
+    $('seal-tap').addEventListener('click', function(){
+      if(isAdmin) return;
+      sealTapCount++;
+      clearTimeout(sealTapTimer);
+      sealTapTimer = setTimeout(function(){ sealTapCount=0; }, 1800);
+      if(sealTapCount >= 5){
+        sealTapCount = 0;
+        $('admin-error').textContent = '';
+        openModal('modal-admin-login');
+      }
+    });
+
+    // toque oculto sobre el nombre -> sección de conexión
+    $('mailbox-brand').addEventListener('click', function(){
+      connectionTapCount++;
+      clearTimeout(connectionTapTimer);
+      connectionTapTimer = setTimeout(function(){ connectionTapCount=0; }, 2200);
+      if(connectionTapCount >= 7){
+        connectionTapCount = 0;
+        showScreen('screen-connection-gate');
+      }
+    });
+
+    // delegated clicks for dynamically generated cards
+    document.body.addEventListener('click', function(e){
+      var el = e.target.closest('[data-action]');
+      if(!el) return;
+      var action = el.getAttribute('data-action');
+      var id = el.getAttribute('data-id');
+      if(action === 'open-letter'){ openLetter(id); }
+      else if(action === 'locked-alert'){
+        var l = state.letters.find(function(x){ return x.id===id; });
+        alert('Esta carta se abre ' + (l.unlockType==='age' ? ('cuando cumpla ' + l.unlockAge + ' años') : ('el ' + unlockLabel(l))) + '.');
+      }
+      else if(action === 'edit-letter'){ e.stopPropagation(); openLetterModal(id); }
+      else if(action === 'delete-letter'){ e.stopPropagation(); deleteLetter(id); }
+      else if(action === 'delete-timeline'){ e.stopPropagation(); deleteTimelineEntry(id); }
+      else if(action === 'logout-admin'){ isAdmin = false; renderMailbox(); renderAjustes(); }
+      else if(action === 'export-backup'){ exportBackup(); }
+      else if(action === 'record-welcome-audio'){ recordWelcomeAudio(); }
+      else if(action === 'delete-welcome-audio'){ deleteWelcomeAudio(); }
+      else if(action === 'import-backup'){
+        var fileInput = $('import-file-input');
+        fileInput.onchange = function(ev){
+          var f = ev.target.files[0];
+          if(f) importBackupFile(f);
+        };
+        fileInput.click();
+      }
+      else if(action === 'save-signature'){
+        var newSig = $('ajustes-new-signature').value.trim();
+        if(newSig){ state.signature = newSig; saveState(); alert('Firma actualizada.'); renderAjustes(); }
+      }
+      else if(action === 'save-entry-pin'){
+        var newPin = $('ajustes-new-pin').value.trim();
+        if(newPin){ state.entryPin = newPin; saveState(); alert('PIN actualizado.'); renderAjustes(); }
+      }
+      else if(action === 'save-admin-pass'){
+        var newPass = $('ajustes-new-admin-pass').value.trim();
+        if(newPass){ state.adminPass = newPass; saveState(); alert('Clave actualizada.'); renderAjustes(); }
+      }
+      else if(action === 'save-special-pass'){
+        var newSpecial = $('ajustes-new-special-pass').value.trim();
+        if(newSpecial){ state.specialPass = newSpecial; saveState(); alert('Clave especial actualizada.'); renderAjustes(); }
+      }
+      else if(action === 'save-connection-pass'){
+        var newConnection = $('ajustes-new-connection-pass').value.trim();
+        if(newConnection){ state.connectionPass = newConnection; saveState(); alert('Clave de conexión actualizada.'); renderAjustes(); }
+      }
+    });
+  }
+
+  /* ---------- tema claro/oscuro manual ---------- */
+  var THEME_KEY = 'para_cuando_theme';
+  function applyTheme(mode){
+    document.body.classList.toggle('dark-mode', mode === 'dark');
+    var btn = $('theme-toggle');
+    if(btn) btn.textContent = mode === 'dark' ? '☀️' : '🌙';
+  }
+  function loadTheme(){
+    applyTheme(storageGet(THEME_KEY) || 'light');
+  }
+  function toggleTheme(){
+    var isDark = document.body.classList.contains('dark-mode');
+    var next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    storageSet(THEME_KEY, next);
+  }
+
+  function init(){
+    wireEvents();
+    loadTheme();
+    populateDMY('setup-birth');
+    populateDMY('setup-papa-birth');
+    if(loadState()){
+      applyBranding();
+      showScreen('screen-pin-gate');
+    } else {
+      showScreen('screen-setup');
+    }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
